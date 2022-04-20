@@ -1,15 +1,12 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:comfort/services/crud.dart';
-import 'package:comfort/views/register_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:random_string/random_string.dart';
 import 'package:xfile/xfile.dart';
+
+import '../services/firebase_services.dart';
 
 class NewEditPhotographStructura extends StatefulWidget {
   @override
@@ -22,7 +19,23 @@ class _NewEditPhotographStructuraState
   File selectedImage;
   bool _isLoading = false;
   // CrudMethods crudMethods = new CrudMethods();
+  final ImagePicker _picker = ImagePicker();
+  FirebaseServices _services = FirebaseServices();
 
+  XFile _image;
+
+  _getImage() async {
+    final pickedImage =
+        await ImagePicker.pickImage(source: ImageSource.gallery);
+    if (pickedImage != null) {
+      this._image = XFile(pickedImage.path);
+    } else {
+      print('No Image Selected');
+    }
+    return _image;
+  }
+
+  // explame 1
   Future getImage() async {
     var image = await ImagePicker.pickImage(source: ImageSource.gallery);
 
@@ -33,62 +46,43 @@ class _NewEditPhotographStructuraState
 
   UserCredential userCredential;
 
-  uploadBlog() async {
-    if (selectedImage != null) {
-      setState(() {
-        _isLoading = true;
-      });
+  // uploadBlog() async {
+  //   if (selectedImage != null) {
+  //     setState(() {
+  //       _isLoading = true;
+  //     });
 
-      /// uploading image to firebase storage
-      StorageReference firebaseStorageRef = FirebaseStorage.instance
-          .ref()
-          .child("blogImages")
-          .child("${randomAlphaNumeric(9)}.jpg");
+  //     /// uploading image to firebase storage
+  //     StorageReference firebaseStorageRef = FirebaseStorage.instance
+  //         .ref()
+  //         .child("blogImages")
+  //         .child("${randomAlphaNumeric(9)}.jpg");
 
-      final StorageUploadTask task = firebaseStorageRef.putFile(selectedImage);
+  //     final StorageUploadTask task = firebaseStorageRef.putFile(selectedImage);
 
-      var downloadUrl = await (await task.onComplete).ref.getDownloadURL();
-      print("this is url $downloadUrl");
+  //     var downloadUrl = await (await task.onComplete).ref.getDownloadURL();
+  //     print("this is url $downloadUrl");
 
-      // Map<String, String> blogMap = {
-      //   "imgUrl": downloadUrl,
-      // };
-
-      // crudMethods.addData(blogMap).then((result) {
-      //   Navigator.pop(context);
-      // });
-
-      FirebaseFirestore.instance
-          .collection("Users")
-          .doc(FirebaseAuth.instance.currentUser.uid)
-          .set(
-        {
-          "Id": FirebaseAuth.instance.currentUser.uid,
-          "FullName": fullName.text,
-          "Email": email.text,
-          "Password": password.text,
-          "Phone": phone.text,
-          "Img": downloadUrl,
-          "Date": DateTime.now(),
-        },
-      ).then(
-        (value) => {
-          Navigator.pop(context),
-        },
-      );
-
-      Navigator.pop(context);
-
-      // crudMethods.addUserData(data: {
-      //   'img': downloadUrl,
-      //   'date': DateTime.now(),
-      // }).then(
-      //   (value) => {
-      //     Navigator.pop(context),
-      //   },
-      // );
-    } else {}
-  }
+  //     FirebaseFirestore.instance
+  //         .collection("Users")
+  //         .doc(FirebaseAuth.instance.currentUser.uid)
+  //         .set(
+  //       {
+  //         "Id": FirebaseAuth.instance.currentUser.uid,
+  //         "FullName": fullName.text,
+  //         "Email": email.text,
+  //         "Password": password.text,
+  //         "Phone": phone.text,
+  //         "Img": downloadUrl,
+  //         "Date": DateTime.now(),
+  //       },
+  //     ).then(
+  //       (value) => {
+  //         Navigator.pop(context),
+  //       },
+  //     );
+  //   } else {}
+  // }
 
   User user = FirebaseAuth.instance.currentUser;
   DocumentSnapshot vendorData;
@@ -122,9 +116,16 @@ class _NewEditPhotographStructuraState
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            GestureDetector(
+            InkWell(
               onTap: () {
-                uploadBlog();
+                if (selectedImage == null) {
+                  return ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Профиль суреті таңдалмаған'),
+                      backgroundColor: Color(0xff4444444),
+                    ),
+                  );
+                }
               },
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -151,7 +152,7 @@ class _NewEditPhotographStructuraState
               ),
             ),
             SizedBox(height: 35),
-            GestureDetector(
+            InkWell(
               onTap: () {
                 Navigator.pop(context);
               },
@@ -243,48 +244,24 @@ class _NewEditPhotographStructuraState
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 150),
-              child: _isLoading
-                  ? Container(
-                      alignment: Alignment.center,
-                      child: CircularProgressIndicator(),
-                    )
-                  : Column(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            getImage();
-                          },
-                          child: selectedImage != null
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(25.0),
-                                  child: Image.file(
-                                    selectedImage,
-                                    fit: BoxFit.cover,
-                                    height: 150,
-                                    width: 150,
-                                  ),
-                                )
-                              : Container(
-                                  height: 150,
-                                  width: 150,
-                                  decoration: BoxDecoration(
-                                    color: Color(0xff444444),
-                                    borderRadius: BorderRadius.circular(500),
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.photo_camera,
-                                        size: 50,
-                                        color: Colors.white,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                        ),
-                      ],
-                    ),
+              child: InkWell(
+                onTap: () {
+                  _getImage().then((value) {
+                    setState(() {
+                      value = _image;
+                    });
+                  });
+                },
+                child: CircleAvatar(
+                  backgroundColor: Colors.transparent,
+                  backgroundImage: _image == null
+                      ? NetworkImage(
+                          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRh-UGFLqpsC_pSdrqB07CZ6x7XRlV9LjYjJEZ3QfQ2ZcdXedG1D-m2DMRB2ZgSekb98S8&usqp=CAU',
+                        )
+                      : FileImage(File(_image.path)),
+                  radius: 100,
+                ),
+              ),
             ),
             Visibility(
               visible: false,
@@ -353,3 +330,55 @@ class _NewEditPhotographStructuraState
     );
   }
 }
+
+// Padding(
+//               padding: const EdgeInsets.symmetric(vertical: 150),
+//               child: _isLoading
+//                   ? Container(
+//                       alignment: Alignment.center,
+//                       child: CircularProgressIndicator(
+//                         color: Color(0xff4444444),
+//                       ),
+//                     )
+//                   : Column(
+//                       children: [
+//                         InkWell(
+//                           onTap: () {
+//                             getImage();
+//                           },
+//                           child: selectedImage != null
+//                               ? Container(
+//                                   height: 150,
+//                                   width: 150,
+//                                   child: ClipRRect(
+//                                     borderRadius: BorderRadius.circular(500.0),
+//                                     child: Image.file(
+//                                       selectedImage,
+//                                       fit: BoxFit.cover,
+//                                       height: 150,
+//                                       width: 150,
+//                                     ),
+//                                   ),
+//                                 )
+//                               : Container(
+//                                   height: 150,
+//                                   width: 150,
+//                                   decoration: BoxDecoration(
+//                                     color: Color(0xff444444),
+//                                     borderRadius: BorderRadius.circular(500),
+//                                   ),
+//                                   child: Column(
+//                                     mainAxisAlignment: MainAxisAlignment.center,
+//                                     children: [
+//                                       Icon(
+//                                         Icons.photo_camera,
+//                                         size: 50,
+//                                         color: Colors.white,
+//                                       ),
+//                                     ],
+//                                   ),
+//                                 ),
+//                         ),
+//                       ],
+//                     ),
+//             ),

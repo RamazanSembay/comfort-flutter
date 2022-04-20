@@ -1,23 +1,24 @@
 name: comfort
 description: A new Flutter project.
+
 publish_to: 'none' 
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.1.0 <3.0.0"
+  sdk: ">=2.1.1 <3.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
-  cupertino_icons: ^1.0.2
+  cupertino_icons: any
   google_fonts: any
   flutter_svg: any
   firebase_auth: ^0.18.0+1
   cloud_firestore: ^0.14.0+2
   provider: any
   firebase_core: any
-  firebase_storage: ^4.0.0
+  firebase_storage: any
   image_picker: any
   get: any
   flutter_swiper: any
